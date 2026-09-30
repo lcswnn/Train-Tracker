@@ -1,0 +1,17 @@
+[Unit]
+Description=E-Ink Mission Control
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lucaswaunn
+WorkingDirectory=/home/lucaswaunn/mission-control
+# Real CTA key goes here when it arrives (never in git):
+# Environment=CTA_API_KEY=your_key_here
+ExecStart=/usr/bin/python3 /home/lucaswaunn/mission-control/main.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
