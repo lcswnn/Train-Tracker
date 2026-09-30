@@ -1,7 +1,7 @@
 import csv
 import random
 from PIL import Image, ImageDraw, ImageFont
-from waveshare_epd import epd7in5_V2
+from waveshare_epd import epd7in5_V2 
 
 # Pick a random quote. csv.DictReader reads the header row so
 # row["Quote"] grabs the column by name, and random.choice
