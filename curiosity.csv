@@ -1,0 +1,37 @@
+topic,question,answer
+SPACE,WHY DOES THE MOON ALWAYS SHOW US THE SAME SIDE?,"The Moon spins once every 27.3 days - exactly as long as one orbit around Earth. This lockstep is called tidal locking, and Earth's gravity did the locking over billions of years."
+SPACE,HOW HEAVY IS A TEASPOON OF NEUTRON STAR?,"About a billion tons. A neutron star packs more mass than our Sun into a ball the size of a city, crushing matter to unimaginable density."
+SPACE,HOW OLD IS THE LIGHT HITTING YOUR FACE?,About 8 minutes and 20 seconds. That is how long sunlight takes to cross 93 million miles - you always see the Sun as it was in the recent past.
+SPACE,COULD SATURN FLOAT IN A BATHTUB?,"Yes - it is the only planet less dense than water. You would need a tub about 75,000 miles wide, but physics says it would bob like a beach ball."
+PHYSICS,DOES TIME MOVE SLOWER AT YOUR FEET?,"Yes. Gravity slows time, so your feet age slightly slower than your head. Atomic clocks have measured the difference across just one foot of height."
+PHYSICS,HOW HOT IS LIGHTNING?,"Up to 54,000 degrees - about five times hotter than the surface of the Sun. It lasts a fraction of a second, which is why the air survives it."
+PHYSICS,WHAT IS THE COLDEST ANYTHING CAN GET?,"-459.67 F, called absolute zero. Atoms hold the minimum energy physics allows there, and scientists have gotten within a billionth of a degree of it."
+PHYSICS,WHY IS THE SKY BLUE?,"Sunlight scatters off air molecules, and blue light scatters the most. At sunset the light travels farther, the blue is scattered away, and reds and oranges remain."
+COMPUTER SCIENCE,WHAT WAS THE FIRST COMPUTER BUG?,A real moth. In 1947 engineers found one inside Harvard's Mark II computer and taped it into the logbook - Grace Hopper's team literally debugged the machine.
+COMPUTER SCIENCE,WHO WAS THE FIRST PROGRAMMER?,"Ada Lovelace, in the 1840s - a century before computers existed. She wrote an algorithm for Babbage's Analytical Engine to compute Bernoulli numbers."
+COMPUTER SCIENCE,WHY IS THE KEYBOARD ARRANGED AS QWERTY?,"To slow typists down. On 1870s typewriters, fast typing jammed the mechanical arms, so the layout deliberately separated common letter pairs."
+COMPUTER SCIENCE,WHAT ARE YOU REALLY DOING WHEN YOU SOLVE A CAPTCHA?,"Digitizing books. The original reCAPTCHA fed you words that scanners could not read, using millions of humans to transcribe old texts one puzzle at a time."
+ENGINEERING,DOES THE EIFFEL TOWER CHANGE HEIGHT?,"Yes - it grows about 6 inches every summer. Heat expands the iron, and the tower even leans slightly away from the sun on hot afternoons."
+ENGINEERING,WHAT IS THE SECRET INGREDIENT IN ROMAN CONCRETE?,"Lime chunks that make it self-healing. When cracks form, water reacts with the lime to fill them - which is why Roman harbors still stand after 2,000 years."
+ENGINEERING,HOW DO NOISE-CANCELING HEADPHONES WORK?,"They listen to the noise and play its exact opposite. The two sound waves cancel out - silence built from anti-sound, computed thousands of times per second."
+ENGINEERING,WHY DO POWER LINES SAG BETWEEN POLES?,"The curve has a name: a catenary. Engineers size the sag so the wire never pulls tight enough to snap when ice, wind, or summer heat stretch it."
+FINANCE,DID EINSTEIN CALL COMPOUND INTEREST THE EIGHTH WONDER?,"Probably not - no record of him saying it exists. But the math earns the hype: at 7 percent annual returns, money doubles about every 10 years."
+FINANCE,WHAT IS THE RULE OF 72?,Divide 72 by your interest rate to get the years needed to double your money. Earning 8 percent? 72 / 8 = doubling every 9 years. No calculator required.
+FINANCE,WHAT WAS THE WORLD'S FIRST STOCK?,Issued in 1602 by the Dutch East India Company. Investors funded risky spice voyages to Asia - inventing the stock market to spread the risk of ships that might never return.
+FINANCE,WHY DO PRICES END IN 99 CENTS?,Because $2.99 feels much cheaper than $3.00. Our brains read left to right and anchor on the first digit - retailers have exploited this for over a century.
+BIOLOGY,HOW MANY NEW CELLS DOES YOUR BODY MAKE PER SECOND?,About 25 million. Most are blood cells - your body rebuilds its entire blood supply roughly every few months without you noticing.
+BIOLOGY,HOW MANY HEARTS DOES AN OCTOPUS HAVE?,"Three - and blue blood. Two hearts pump to the gills; the third pumps to the body. The main heart stops when it swims, which is why octopuses prefer crawling."
+BIOLOGY,WHAT ANIMAL SURVIVED THE VACUUM OF SPACE?,"The tardigrade, or water bear. In 2007 these microscopic animals spent 10 days exposed to open space and came back alive - no suit required."
+BIOLOGY,ARE BANANAS RADIOACTIVE?,"Slightly. They contain potassium-40, so consistent that scientists informally measure radiation in banana equivalent doses. You would need millions at once to feel any effect."
+HISTORY,DID CLEOPATRA LIVE CLOSER TO THE IPHONE THAN THE PYRAMIDS?,Yes. The Great Pyramid was finished around 2560 BC; Cleopatra lived around 30 BC. The pyramids were already ancient to her - by over two thousand years.
+HISTORY,WHAT IS OLDER: OXFORD UNIVERSITY OR THE AZTEC EMPIRE?,Oxford. Teaching began there by 1096; the Aztec capital Tenochtitlan was founded in 1325 - more than 200 years later.
+HISTORY,WHAT DID NINTENDO MAKE BEFORE VIDEO GAMES?,"Playing cards. Founded in Kyoto in 1889, Nintendo spent nearly a century making hanafuda cards before touching a video game."
+HISTORY,WERE MAMMOTHS STILL ALIVE WHEN THE PYRAMIDS WERE BUILT?,Yes. A small herd survived on Wrangel Island until about 1700 BC - roughly 800 years after the Great Pyramid was finished.
+MATHEMATICS,"WHAT IS 111,111,111 x 111,111,111?","12,345,678,987,654,321. Rows of ones multiply into a perfect numerical palindrome - no calculator magic, just arithmetic symmetry."
+MATHEMATICS,HAS YOUR CARD SHUFFLE EVER HAPPENED BEFORE?,Almost certainly not. A deck has 52 factorial possible orders - so many that every shuffle you make is very likely the first of its kind in history.
+MATHEMATICS,IS A JIFFY A REAL UNIT OF TIME?,Yes. In computing it usually means 1/100th of a second. Physicists use it too - for them it is the time light takes to travel one centimeter.
+MATHEMATICS,WHICH NUMBER CAN'T BE WRITTEN IN ROMAN NUMERALS?,"Zero. The Romans had no symbol for it - zero as a number came from India centuries later, via Arabic mathematicians."
+TECHNOLOGY,WHAT DID THE FIRST WEBCAM WATCH?,"A coffee pot. In 1991, Cambridge researchers pointed a camera at their break-room coffee machine so they would not walk over for an empty pot."
+TECHNOLOGY,WHICH CAME FIRST: EMAIL OR THE WEB?,"Email, by 20 years. The first network email was sent in 1971; the World Wide Web did not exist until 1991."
+TECHNOLOGY,WHAT WAS THE FIRST DOMAIN NAME EVER REGISTERED?,"Symbolics.com, on March 15, 1985. A computer company claimed it before dot-com meant anything to anyone."
+TECHNOLOGY,DOES WI-FI STAND FOR WIRELESS FIDELITY?,"No - it stands for nothing. A branding firm coined Wi-Fi as a pun on hi-fi, because IEEE 802.11b Direct Sequence was never going to sell routers."
