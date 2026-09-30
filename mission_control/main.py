@@ -11,6 +11,7 @@ per cycle.
 """
 import argparse
 import os
+import sys
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -65,7 +66,27 @@ def preview(screen_name=None):
         print(f"{name} -> {path}")
 
 
+def _waveshare_lib():
+    """Locate the Waveshare e-Paper python lib and put it on sys.path.
+
+    The test scripts work from inside the cloned repo; this makes main.py
+    work from anywhere (including the systemd service at boot)."""
+    candidates = [
+        os.path.expanduser("~/e-Paper/RaspberryPi_JetsonNano/python/lib"),
+        os.path.expanduser("~/waveshare_epd"),
+    ]
+    for p in candidates:
+        if os.path.isdir(p):
+            if p not in sys.path:
+                sys.path.insert(0, p)
+            return
+    raise ModuleNotFoundError(
+        "waveshare_epd not found. Searched: " + ", ".join(candidates) +
+        ". Locate yours with: find ~ -name epd7in5_V2.py 2>/dev/null")
+
+
 def run():
+    _waveshare_lib()
     from waveshare_epd import epd7in5_V2
     epd = epd7in5_V2.EPD()
     epd.init()
