@@ -1,13 +1,16 @@
 """Mission Control entry point.
 
-On the Pi:  python3 main.py          (runs the rotation forever)
+On the Pi:  python3 main.py          (runs the dayparted rotation forever)
 On the Mac: python3 main.py --preview  (renders each screen to PNGs in
             ./previews/ -- no Pi hardware imports needed)
 
-Rotation: each screen gathers its providers (cached, with stale
-fallback), renders, displays, and dwells. A failed screen is skipped,
-never fatal. During MORNING_HOURS the departure screen runs twice
-per cycle.
+Dayparts (config.DAYPARTS): the frame changes personality by time of
+day -- MORNING OPS, SLOW DAY, TOMORROW BRIEF, SLEEP. Each screen gathers
+its providers (cached, with stale fallback), renders, displays, and
+dwells. A failed screen is skipped, never fatal.
+
+Phone control: main.py also serves a tiny web UI (control.py) at
+http://frame.local:5000 -- jump to a screen, refresh now, pause/resume.
 """
 import argparse
 import os
@@ -17,6 +20,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import config
+import control
 from providers import weather as _pw, space as _ps, cta as _pc
 from screens import departure as _sd, conditions as _sc, space as _ss  # noqa
 from screens.base import SCREENS
@@ -41,14 +45,31 @@ def gather(names):
     return out
 
 
-def build_cycle():
-    """List of (screen_name, dwell). Departure doubles up in the morning."""
-    hour = datetime.now(TZ).hour
-    order = [name for name, _ in config.ROTATION]
-    dwell_of = {name: dwell for name, dwell in config.ROTATION}
-    if config.MORNING_HOURS[0] <= hour < config.MORNING_HOURS[1]:
-        order.insert(1, "departure")
-    return [(n, dwell_of[n]) for n in order]
+def daypart_for(hour):
+    """Pick the active daypart for an hour (24h). Handles overnight
+    windows where end < start, e.g. SLEEP 22 -> 6."""
+    for p in config.DAYPARTS:
+        s, e = p["start"], p["end"]
+        if s <= e:
+            if s <= hour < e:
+                return p
+        elif hour >= s or hour < e:
+            return p
+    return config.DAYPARTS[0]
+
+
+def current_daypart_name():
+    return daypart_for(datetime.now(TZ).hour)["name"]
+
+
+def _wait(seconds, ctl):
+    """Sleep in small increments, waking early on pause/override so the
+    phone UI stays responsive even during a long dwell."""
+    end = time.time() + seconds
+    while time.time() < end:
+        if ctl.paused or ctl.has_pending():
+            return
+        time.sleep(5)
 
 
 def preview(screen_name=None):
@@ -89,21 +110,49 @@ def run():
     _waveshare_lib()
     from waveshare_epd import epd7in5_V2
     epd = epd7in5_V2.EPD()
+    ctl = control.Controller()
+    control.start(ctl, current_daypart_name)
     epd.init()
-    print("Display initialized. Rotation:", [n for n, _ in build_cycle()])
+    print("Display initialized.")
+
+    def show(name, context):
+        """Render one screen and push it to the panel."""
+        screen = SCREENS[name]
+        img = screen.render(gather(screen.providers))
+        epd.display(epd.getbuffer(img))
+        ctl.set_current(name)
+        print(f"[{datetime.now(TZ):%H:%M}] {name} ({context})")
+
     try:
         while True:
-            for name, dwell in build_cycle():
-                screen = SCREENS[name]
-                try:
-                    img = screen.render(gather(screen.providers))
-                except Exception as e:
-                    print(f"[{name}] render failed, skipping: {e}")
+            part = daypart_for(datetime.now(TZ).hour)
+            if ctl.paused or not part["screens"]:
+                # Frozen -- but a phone-UI override is still honored
+                # immediately instead of being swallowed.
+                target = ctl.take_forced()
+                if target in SCREENS:
+                    try:
+                        show(target, "phone override")
+                    except Exception as e:
+                        print(f"[{target}] render failed, skipping: {e}")
+                elif target:
+                    print(f"[{target}] unknown screen, skipping")
+                else:
+                    time.sleep(5)
+                continue
+            for name in part["screens"]:
+                if ctl.paused:
+                    break
+                target = ctl.take_forced() or name
+                if target not in SCREENS:
+                    print(f"[{target}] unknown screen, skipping")
                     continue
-                epd.display(epd.getbuffer(img))
-                print(f"[{datetime.now(TZ):%H:%M}] {name} "
-                      f"(dwell {dwell}s)")
-                time.sleep(dwell)
+                try:
+                    show(target, f"{part['name']}, dwell {part['dwell']}s")
+                except Exception as e:
+                    print(f"[{target}] render failed, skipping: {e}")
+                    continue
+                _wait(part["dwell"], ctl)
     finally:
         epd.sleep()
         print("Display put to sleep.")

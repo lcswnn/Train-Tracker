@@ -12,9 +12,27 @@ Design rules (NASA instrument x editorial):
 from PIL import Image, ImageDraw, ImageFont
 
 import config
+import os
 
 W, H = config.WIDTH, config.HEIGHT
 MARGIN = 48
+
+# Fonts ship with the project (fonts/) so Mac previews and the Pi render
+# byte-identical type. Falls back to system DejaVu on Linux if missing.
+_FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "..", "fonts")
+
+
+def _font_path(bold):
+    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    bundled = os.path.join(_FONTS_DIR, name)
+    if os.path.exists(bundled):
+        return bundled
+    system = f"/usr/share/fonts/truetype/dejavu/{name}"
+    if os.path.exists(system):
+        return system
+    raise FileNotFoundError(
+        f"{name} not found in {bundled} or {system}")
 
 SCREENS = {}
 
@@ -35,8 +53,7 @@ class Screen:
 
 
 def font(size, bold=False):
-    return ImageFont.truetype(config.FONT_BOLD if bold else config.FONT_PATH,
-                              size)
+    return ImageFont.truetype(_font_path(bold), size)
 
 
 def blank():

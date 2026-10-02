@@ -6,7 +6,7 @@ NASA instrument panel × minimalist editorial design.
 ## Layout
 
 ```
-mission-control/
+mission_control/
   config.py                 # every knob: station, walk time, keys, rotation
   main.py                   # rotation loop; --preview renders PNGs on a Mac
   mission-control.service   # systemd unit: launch on boot
@@ -44,9 +44,9 @@ python3 main.py --preview --screen space
 
 ```bash
 # copy the whole folder
-scp -r mission-control lucaswaunn@frame.local:~/
+scp -r mission_control lucaswaunn@frame.local:~/
 ssh lucaswaunn@frame.local
-cd ~/mission-control
+cd ~/mission_control
 python3 main.py                      # test the rotation
 
 # launch on boot
@@ -56,6 +56,22 @@ sudo systemctl enable --now mission-control
 ```
 
 Set your real walk time in `config.py` (`WALK_MINUTES`) — time the
-door-to-platform walk once. When the CTA key arrives, add it as
+door-to-platform walk once. Tune the `DAYPARTS` hours to your routine.
+When the CTA key arrives, add it as
 `Environment=CTA_API_KEY=...` in the service file and
 `sudo systemctl restart mission-control`.
+
+## Phone control
+
+`main.py` also serves a control UI from the Pi itself — no app to install:
+
+```bash
+pip install --break-system-packages flask   # on the Pi, once
+```
+
+Then from your phone on the same WiFi, open **http://frame.local:5000**
+— iPhone: Share → Add to Home Screen for an app icon. Big buttons jump
+to any screen (one-shot override, then the schedule resumes), refresh
+the current screen now, and pause/resume the frame. The JSON endpoints
+(`/api/status`, `/api/screen/<name>`, `/api/refresh`, `/api/pause`,
+`/api/resume`) are iOS-Shortcuts friendly.

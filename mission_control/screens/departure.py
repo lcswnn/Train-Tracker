@@ -61,7 +61,9 @@ class DepartureScreen(Screen):
         line2 = (f"walk {b['walk_min']} min  ·  "
                  f"leave by {fmt_time(b['leave_by'])}")
         if n["delay_min"]:
-            line2 += f"  ·  delayed {n['delay_min']} min"
+            # delay_unknown: live API says delayed but not by how much.
+            line2 += ("  ·  delayed" if n.get("delay_unknown")
+                      else f"  ·  delayed {n['delay_min']} min")
         y = centered(draw, W // 2, y, line1, font(30))
         y = centered(draw, W // 2, y + 10, line2, font(26))
         y += 26
