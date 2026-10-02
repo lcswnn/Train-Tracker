@@ -64,12 +64,41 @@ def current_daypart_name():
 
 def _wait(seconds, ctl):
     """Sleep in small increments, waking early on pause/override so the
-    phone UI stays responsive even during a long dwell."""
+    phone UI stays responsive even during a long dwell. Never overshoots
+    the requested time, so short refresh intervals stay on schedule."""
     end = time.time() + seconds
-    while time.time() < end:
+    while True:
         if ctl.paused or ctl.has_pending():
             return
-        time.sleep(5)
+        remaining = end - time.time()
+        if remaining <= 0:
+            return
+        time.sleep(min(5, remaining))
+
+
+def _slot_end(name, dwell, ctl, show):
+    """Dwell on a screen, re-rendering live screens in place.
+
+    Screens opting in via a `refresh` attribute (seconds) repaint
+    periodically during their dwell so countdowns stay honest;
+    everything else just waits out the dwell. Stops early on pause
+    or a queued phone-UI override. A failed refresh ends the dwell
+    instead of killing the service.
+    """
+    interval = getattr(SCREENS[name], "refresh", 0) or 0
+    end = time.time() + dwell
+    while True:
+        _wait(min(interval if interval else dwell,
+                  max(end - time.time(), 0)), ctl)
+        if ctl.paused or ctl.has_pending() or time.time() >= end:
+            return
+        if not interval:
+            return
+        try:
+            show(name, "live refresh")
+        except Exception as e:
+            print(f"[{name}] refresh render failed, ending dwell: {e}")
+            return
 
 
 def preview(screen_name=None):
@@ -152,7 +181,7 @@ def run():
                 except Exception as e:
                     print(f"[{target}] render failed, skipping: {e}")
                     continue
-                _wait(part["dwell"], ctl)
+                _slot_end(target, part["dwell"], ctl, show)
     finally:
         epd.sleep()
         print("Display put to sleep.")

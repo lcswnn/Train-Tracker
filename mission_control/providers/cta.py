@@ -7,12 +7,17 @@ so the DEPARTURE screen and rotation can be tested. The interface is
 identical either way:
 {"trains": [{"time": iso, "destination": str, "delay_min": int}, ...]}.
 
+Service alerts come from CTA's Customer Alerts API (alerts.aspx),
+which needs no key: {"alerts": [{"headline", "description",
+"major", "impact"}]}. They ride along in both modes.
+
 board() turns raw departures into the "when do I leave?" answer:
 leave-by time, countdown, and the PLENTY OF TIME / LEAVE NOW status.
 That logic lives here (data layer), not in the screen.
 """
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import xml.etree.ElementTree as ET
 
 import requests
 
@@ -21,6 +26,7 @@ from providers.base import Provider
 
 TZ = ZoneInfo(config.TIMEZONE)
 API_URL = "http://lapi.transitchicago.com/api/1.0/ttarrivals.aspx"
+ALERTS_URL = "http://lapi.transitchicago.com/api/1.0/alerts.aspx"
 
 # Which way you're headed. Division/Milwaukee serves both directions;
 # we only board trains going this way. Flip to "O'Hare" if that's
@@ -145,4 +151,42 @@ class CTAProvider(Provider):
         else:
             trains = _mock_departures(now)
         return {"trains": trains,
+                "alerts": _fetch_alerts(),
                 "mock": not bool(config.CTA_API_KEY)}
+
+
+def _fetch_alerts():
+    """Active Blue Line alerts, major ones first.
+
+    Uses CTA's Customer Alerts API, which needs no key, so the status
+    strip stays live even in mock mode. Never raises: on any failure
+    it returns [] and the strip just shows nothing instead of taking
+    the departure board down with it.
+    """
+    try:
+        resp = requests.get(ALERTS_URL,
+                            params={"routeid": "Blue", "activeonly": "true"},
+                            timeout=10)
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+    except Exception:
+        return []
+
+    def text(node, tag):
+        return (node.findtext(tag) or "").strip()
+
+    alerts = []
+    for node in root.findall("Alert"):
+        try:
+            severity = int(text(node, "SeverityScore") or 0)
+        except ValueError:
+            severity = 0
+        alerts.append({
+            "headline": text(node, "Headline"),
+            "description": " ".join(text(node, "ShortDescription").split()),
+            "impact": text(node, "Impact"),
+            "major": text(node, "MajorAlert") == "1",
+            "severity": severity,
+        })
+    alerts.sort(key=lambda a: (a["major"], a["severity"]), reverse=True)
+    return [a for a in alerts if a["headline"]][:3]
