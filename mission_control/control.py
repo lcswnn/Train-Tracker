@@ -5,30 +5,81 @@ process. From your phone (same home WiFi): http://frame.local:5000 --
 then Share > Add to Home Screen for an app icon. The JSON endpoints
 are also iOS-Shortcuts friendly.
 
-How it works: the web UI writes one-shot commands into a thread-safe
-Controller; the rotation loop in main.py checks it every few seconds.
+How it works: the web UI writes commands into a thread-safe
+Controller; the main loop in main.py checks it every few seconds.
 No polling from the Pi side, no second process to supervise.
 
 Controls:
-  - Jump to a screen (one-shot override, then rotation resumes)
+  - Tap a screen to PIN it: the frame stays on that screen until you
+    pick another one (or resume rotation). The choice survives
+    restarts -- it's saved to a small state file.
+  - Resume rotation: back to the daypart digest.
   - Refresh now (re-renders the current screen immediately)
   - Pause / resume (freeze the frame for the night)
 """
+import json
+import os
 import threading
 
 import config
 from screens.base import SCREENS
 
+STATE_FILE = os.path.join(config.CACHE_DIR, "frame_state.json")
+
 
 class Controller:
-    """Thread-safe command box between the web UI and the rotation loop."""
+    """Thread-safe command box between the web UI and the main loop."""
 
     def __init__(self):
         self._lock = threading.Lock()
         self.paused = False
         self._forced = None    # one-shot: render this screen next
         self.current = None    # last screen actually displayed
+        self._sticky = None    # pinned screen; None = follow the digest
+        self._rev = 0          # bumped on every sticky change
+        self._load_state()
 
+    # ---- persistence ------------------------------------------
+    def _load_state(self):
+        try:
+            with open(STATE_FILE) as f:
+                name = json.load(f).get("sticky")
+            if name in SCREENS:
+                self._sticky = name
+                print(f"[control] restored pinned screen: {name}")
+        except Exception:
+            pass
+
+    def _save_state(self):
+        try:
+            os.makedirs(config.CACHE_DIR, exist_ok=True)
+            with open(STATE_FILE, "w") as f:
+                json.dump({"sticky": self._sticky}, f)
+        except Exception as e:
+            print(f"[control] could not save state: {e}")
+
+    # ---- sticky selection -------------------------------------
+    def set_sticky(self, name):
+        """Pin a screen (or None to resume the digest)."""
+        with self._lock:
+            if name is not None and name not in SCREENS:
+                return False
+            if name != self._sticky:
+                self._sticky = name
+                self._rev += 1
+                self._save_state()
+            return True
+
+    def get_sticky(self):
+        with self._lock:
+            return self._sticky
+
+    @property
+    def rev(self):
+        with self._lock:
+            return self._rev
+
+    # ---- one-shot overrides (refresh, frozen branch) -----------
     def force(self, name):
         """Queue a one-shot screen override. Returns False if unknown."""
         with self._lock:
@@ -60,6 +111,7 @@ class Controller:
                 "paused": self.paused,
                 "daypart": daypart,
                 "current": self.current,
+                "sticky": self._sticky,
                 "screens": sorted(SCREENS),
             }
 
@@ -84,6 +136,7 @@ PAGE = """<!doctype html>
            border-radius: 14px; border: 1px solid #2c2c2c; background: #161616;
            color: #f2f2f2; cursor: pointer; width: 100%; }
   button:active { background: #2a2a2a; transform: scale(0.98); }
+  button.pinned { border-color: #f2f2f2; }
   button.wide { border-color: #3d3d3d; }
   button.accent { background: #f2f2f2; color: #0a0a0a; border: none; }
   button.accent:active { background: #cfcfcf; }
@@ -96,14 +149,18 @@ PAGE = """<!doctype html>
   <div id="status">connecting&hellip;</div>
   <div class="grid" id="screens"></div>
   <div class="grid">
+    <button id="rotation" class="wide">&#8635;&nbsp; Resume rotation</button>
+  </div>
+  <div class="grid">
     <button id="refresh" class="wide accent">&#8635;&nbsp; Refresh now</button>
   </div>
   <div class="row2">
     <button id="pause" class="wide">&#10074;&#10074;&nbsp; Pause</button>
     <button id="resume" class="wide">&#9654;&nbsp; Resume</button>
   </div>
-  <div id="note">Jumping to a screen is a one-shot override &mdash; the
-  normal schedule resumes after. Pause freezes the frame until you
+  <div id="note">Tapping a screen <b>pins</b> it &mdash; the frame stays
+  there until you pick another screen or resume rotation. Your pick is
+  remembered across restarts. Pause freezes the frame until you
   resume. Same WiFi only: <b>frame.local:5000</b>.</div>
 <script>
 async function api(path, method) {
@@ -114,13 +171,15 @@ async function refreshStatus() {
   try {
     const s = await api('/api/status');
     const el = document.getElementById('status');
-    el.textContent = (s.paused ? 'PAUSED' : s.daypart) +
-      (s.current ? '  \u00b7  ' + s.current.toUpperCase() : '');
+    el.textContent = s.sticky ? 'PINNED \\u00b7 ' + s.sticky.toUpperCase()
+      : (s.paused ? 'PAUSED' : s.daypart) +
+        (s.current ? '  \\u00b7  ' + s.current.toUpperCase() : '');
     const grid = document.getElementById('screens');
     if (!grid.children.length) {
       s.screens.forEach(function(name) {
         const b = document.createElement('button');
         b.textContent = name.toUpperCase();
+        b.id = 'screen-' + name;
         b.onclick = async function() {
           await api('/api/screen/' + name, 'POST');
           refreshStatus();
@@ -128,10 +187,17 @@ async function refreshStatus() {
         grid.appendChild(b);
       });
     }
+    s.screens.forEach(function(name) {
+      const b = document.getElementById('screen-' + name);
+      if (b) b.classList.toggle('pinned', s.sticky === name);
+    });
   } catch (e) {
-    document.getElementById('status').textContent = 'unreachable \u2014 is the Pi on?';
+    document.getElementById('status').textContent = 'unreachable \\u2014 is the Pi on?';
   }
 }
+document.getElementById('rotation').onclick = async function() {
+  await api('/api/rotation', 'POST'); refreshStatus();
+};
 document.getElementById('refresh').onclick = async function() {
   await api('/api/refresh', 'POST'); refreshStatus();
 };
@@ -162,9 +228,14 @@ def create_app(controller, daypart_fn):
         return jsonify(controller.status(daypart_fn()))
 
     @app.post("/api/screen/<name>")
-    def force_screen(name):
-        ok = controller.force(name)
+    def pin_screen(name):
+        ok = controller.set_sticky(name)
         return jsonify({"ok": ok}), (200 if ok else 404)
+
+    @app.post("/api/rotation")
+    def resume_rotation():
+        controller.set_sticky(None)
+        return jsonify({"ok": True})
 
     @app.post("/api/refresh")
     def refresh():

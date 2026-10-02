@@ -1,7 +1,7 @@
 """CONDITIONS: minimalist weather, not a weather app.
 
 Giant temperature, the practical interpretation as a single strong
-statement, and the commute hours across the bottom. Nothing else.
+statement, and the next 6 hours across the bottom. Nothing else.
 """
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -44,6 +44,9 @@ def fmt_12(hhmm):
 class ConditionsScreen(Screen):
     name = "conditions"
     dwell = 40
+    # Live screen: re-render in place every 30 min so the hourly strip
+    # rolls forward (provider cache TTL is 15 min, so data is fresh).
+    refresh = 1800
     providers = ("weather",)
 
     def render(self, data):

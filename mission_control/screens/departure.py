@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 import config
 from providers.cta import board
 from screens.base import (Screen, register, blank, centered, label, rule,
-                          wrap, font, unavailable, W, H, MARGIN)
+                          wrap, font, ink, unavailable, W, H, MARGIN)
 
 TZ = ZoneInfo(config.TIMEZONE)
 
@@ -59,35 +59,43 @@ class DepartureScreen(Screen):
         y = 92
         if b["status"].startswith("LEAVE IN"):
             mins = b["status"].replace("LEAVE IN ", "").replace(" MIN", "")
-            y = label(draw, MARGIN, y, "LEAVE IN")
+            y = ink(draw, (MARGIN, y), "LEAVE IN", font(30))
             y = centered(draw, W // 2, y + 6, f"{mins} MIN",
-                         font(150, bold=True))
+                         font(120, bold=True))
         else:
             # PLENTY OF TIME / LEAVE SOON / LEAVE NOW / TRAIN DELAYED
             y = centered(draw, W // 2, y + 10, b["status"],
-                         font(72, bold=True))
+                         font(60, bold=True))
         y += 10
 
-        # --- Leave-by: the actionable line, big ---
+        # --- Leave-by / train / next: spaced to fill down to the strip ---
         n = b["next"]
-        y = centered(draw, W // 2, y,
-                     f"LEAVE BY {fmt_time(b['leave_by']).upper()}",
-                     font(40, bold=True))
-        y += 6
-
-        # --- Which train, and the walk ---
         detail = (f"{fmt_time(n['time'])}  →  {n['destination']}  ·  "
                   f"walk {b['walk_min']} min")
         if n["delay_min"]:
             # delay_unknown: live API says delayed but not by how much.
             detail += ("  ·  delayed" if n.get("delay_unknown")
                        else f"  ·  delayed {n['delay_min']} min")
-        y = centered(draw, W // 2, y, detail, font(22))
-        y += 4
         f2 = b["following"]
-        centered(draw, W // 2, y,
-                 f"next {fmt_time(f2['time'])} → {f2['destination']}",
-                 font(18))
+        block = [
+            (f"LEAVE BY {fmt_time(b['leave_by']).upper()}",
+             font(40, bold=True)),
+            (detail, font(24)),
+            (f"next {fmt_time(f2['time'])} → {f2['destination']}",
+             font(26)),
+        ]
+        strip_top = H - 104
+        heights = []
+        for text, fnt in block:
+            _l, _t, _r, _bb = draw.textbbox((0, 0), text, font=fnt)
+            heights.append(_bb - _t)
+        # Evenly distribute the leftover whitespace above/between/below.
+        gap = (strip_top - 10 - y - sum(heights)) / (len(block) + 1)
+        gap = max(gap, 6)
+        yy = y + gap
+        for (text, fnt), h in zip(block, heights):
+            yy = centered(draw, W // 2, yy, text, fnt)
+            yy += gap
 
         # --- Bottom strip: Blue Line status ---
         rule(draw, H - 104)

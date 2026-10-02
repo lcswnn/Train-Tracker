@@ -1,12 +1,22 @@
 """Weather provider: Open-Meteo. Free, no key.
 
 One call returns everything the CONDITIONS screen needs:
-current conditions, the commute-hour strip, and today's stats.
+current conditions, the next-6-hours strip, and today's stats.
 """
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import requests
 
 import config
 from providers.base import Provider
+
+TZ = ZoneInfo(config.TIMEZONE)
+
+
+def fmt_hour(h):
+    ap = "AM" if h < 12 else "PM"
+    return f"{h % 12 or 12} {ap}"
 
 
 class WeatherProvider(Provider):
@@ -31,17 +41,25 @@ class WeatherProvider(Provider):
                             params=params, timeout=15).json()
         cur, hr, daily = data["current"], data["hourly"], data["daily"]
 
-        # Commute strip: hours 5-10 AM (covers any reasonable departure).
+        # Next 6 hours starting with the current hour -- the strip
+        # rolls forward through the day instead of freezing on the
+        # morning commute.
+        now = datetime.now(TZ).replace(minute=0, second=0, microsecond=0)
         hours = []
         for i, t in enumerate(hr["time"]):
-            h = int(t[11:13])
-            if t.startswith(data["daily"]["time"][0]) and 5 <= h <= 10:
-                hours.append({
-                    "label": f"{h - 12 if h > 12 else h} AM",
-                    "code": hr["weather_code"][i],
-                    "temp": round(hr["temperature_2m"][i]),
-                    "rain": round(hr["precipitation_probability"][i] or 0),
-                })
+            dt = datetime.fromisoformat(t)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=TZ)  # Open-Meteo: naive local time
+            if dt < now:
+                continue
+            hours.append({
+                "label": fmt_hour(dt.hour),
+                "code": hr["weather_code"][i],
+                "temp": round(hr["temperature_2m"][i]),
+                "rain": round(hr["precipitation_probability"][i] or 0),
+            })
+            if len(hours) == 6:
+                break
 
         return {
             "temp": round(cur["temperature_2m"]),
